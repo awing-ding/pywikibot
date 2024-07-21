@@ -1,0 +1,9 @@
+families/*
+data/credentials.jsonc
+data/*.db
+pywikibot-ServiceBot.lwp
+throttle.ctrl
+logs/*
+apicache/*
+venv/*
+.idea/*
