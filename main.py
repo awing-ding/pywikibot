@@ -3,10 +3,8 @@ from pathlib import Path
 
 
 def main() -> None:
-    path = Path().absolute().as_posix()
-    db = data.Data(path)
-    for entry in db.db :
-        print(entry)
+    path = Path().resolve() / "data" / "database_linguistique.db"
+    db = data.Data(str(path))
 
 
 
