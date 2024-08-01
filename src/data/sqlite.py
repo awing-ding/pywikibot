@@ -26,10 +26,10 @@ class Data:
         self.connection = sqlite3.connect(path)
         self.cursor = self.connection.cursor()
         if debug:
-            self.db = self.cursor.execute(f"""SELECT francais, pierrick, phonétique, classe, commentaire,
+            self.db = self.cursor.execute("""SELECT francais, pierrick, phonétique, classe, commentaire,
                                                 définition, étymologie, cyrilic, hangeul
                                          FROM dictionnaire
-                                         LIMIT ${limit} OFFSET ${offset}""").fetchall()
+                                         LIMIT ? OFFSET ?""", (limit, offset)).fetchall()
         else:
             self.db = self.cursor.execute("""SELECT francais, pierrick, phonétique, classe, commentaire,
                                                 définition, étymologie, cyrilic, hangeul

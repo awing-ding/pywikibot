@@ -1,3 +1,4 @@
+
 local MAX_WHILE_ITERATION = -100
 
 local vowelList = {

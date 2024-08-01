@@ -1,5 +1,6 @@
 import lupa
 from src import log
+from pathlib import Path
 
 
 class Word:
@@ -59,16 +60,21 @@ class Word:
         self._etymologie = str(entry[6]).replace("None", "")
         self._cyrilic = str(entry[7]).replace("None", "")
         self._hangeul = str(entry[8]).replace("None", "")
-        self.proceed = self.should_be_manually_added()
-        if self.proceed :
+        self.proceed, self.why_not_proceed = self.should_be_manually_added()
+        if self.proceed:
             self._deabreviate_class()
             self._wikicode = ""
             self._generate_wikicode()
             if self.is_declinable():
-                self.lua = lupa.LuaRuntime()
-                with open("src/data/word/declinaison.lua") as f:
-                    self.luaDeclinaison = f.read()
+                self._configure_lua()
                 self.declinaisons = self._declinaison()
+
+    def _configure_lua(self) -> None:
+        self._lua = lupa.LuaRuntime()
+        luaPath = str(Path().resolve() / "src" / "data" / "word" / "declinaison.lua")
+        with open(luaPath, 'r', encoding="utf-8") as f:
+            luaDeclinaison = f.read()
+            self._lua.execute(luaDeclinaison)
 
     def _deabreviate_class(self) -> None:
         """
@@ -101,7 +107,7 @@ class Word:
         Returns:
             list[str]: A list of declinations for the word.
         """
-        words: str = self.lua.eval(self.luaDeclinaison)
+        words: str = self._lua.eval(f"main('{self.pierrick}')")
         if words.find("Error") != -1:
             log("Error in lua script for word " + self.pierrick + " not proceeding further")
             self.proceed = False
@@ -145,13 +151,27 @@ class Word:
         """
         return self._wikicode
 
-    def should_be_manually_added(self) -> bool:
+    def should_be_manually_added(self) -> tuple[bool, str]:
         """
         Checks if the word should be manually added to the wiki.
 
         Returns:
             bool: True if the word should be manually added, False otherwise.
+            str: Why should the word be manually added?
         """
-        return (self._commentaire or self._classe is None or self._classe == "conjug" or
-                self._classe == "cardinal" or self._classe == "moment" or self._classe == "particule"
-                or self.pierrick is None or self._definition is None)
+        wrong = False
+        cause = ""
+        if self._commentaire:
+            wrong = True
+            cause += f"Un commentaire est présent pour {self.pierrick} : {self._commentaire}. "
+        if self._classe is None or self._classe == "conjug" or self._classe == "cardinal" or self._classe == "moment" or self._classe == "particule":
+            wrong = True
+            cause += f"La classe de {self.pierrick} est invalide : {self._classe}. "
+        if self.pierrick == "":
+            wrong = True
+            cause += f"Le mot n'existe pas ! "
+        if self._definition == "":
+            wrong = True
+            cause += f"Le mot n'est pas défini ! "
+        wrong = not wrong
+        return wrong, cause

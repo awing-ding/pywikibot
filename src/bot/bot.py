@@ -12,18 +12,17 @@ class Bot(CreatingPageBot):
         "minor": False
     }
 
-    def __init__(self, entry: tuple[str], namespace: str, db: Data) -> None:
+    def __init__(self, namespace: str, namespace_id: int, db: Data) -> None:
         self.db = db
         self.site = Site()
-        self.namespace = namespace
+        self.namespace_id = namespace_id
         self.pages_generator = AllpagesPageGenerator(site=self.site, namespace=namespace)
-        self.data = entry
         super().__init__()
 
     def get_generator(self):
         while row := self.db.get_next_page():
             title = row[1]
-            page = Page(self.site, title, ns=self.namespace)
+            page = Page(self.site, title, ns=self.namespace_id)
             yield page
 
     def treat_pages(self) -> None:
@@ -42,4 +41,4 @@ class Bot(CreatingPageBot):
                                 decl.text = f"#REDIRECT [[{word.pierrick}]]"
                                 decl.save(minor=False, botflag=True)
             else:
-                log(f"Word {word.pierrick} should be manually added.")
+                log(f"Word {word.pierrick} should be manually added. : {word.why_not_proceed} ")
