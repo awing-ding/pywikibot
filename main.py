@@ -14,7 +14,7 @@ def main() -> None:
         db = Data(str(path), True, int(config["CONFIG"]["limit"]), int(config["CONFIG"]["offset"]))
         Bot(db, namespace, namespace_id).treat_pages()
     else:
-        db = Data(str(path)).db
+        db = Data(str(path))
         Bot(db).treat_pages()
 
 
