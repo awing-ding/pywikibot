@@ -1,5 +1,5 @@
 import lupa
-from src import log
+from src.log import log, warn, info, error
 from pathlib import Path
 
 
@@ -108,8 +108,8 @@ class Word:
             list[str]: A list of declinations for the word.
         """
         words: str = self._lua.eval(f"main('{self.pierrick}')")
-        if words.find("Error") != -1:
-            log("Error in lua script for word " + self.pierrick + " not proceeding further")
+        if words.find("error") != -1:
+            error("Error in lua script for word " + self.pierrick + " not proceeding further")
             self.proceed = False
             return []
         return words.split(' ')
@@ -171,7 +171,11 @@ class Word:
             wrong = True
             cause += f"Le mot n'existe pas ! "
         if self._definition == "":
-            wrong = True
-            cause += f"Le mot n'est pas défini ! "
+            warn(f"Pas de définition pour {self.pierrick} !")
+        if self._etymologie == "":
+            info(f"Pas d'étymologie pour {self.pierrick}.")
+        if self._francais == "":
+            info(f"Pas de traduction pour {self.pierrick}")
+
         wrong = not wrong
         return wrong, cause

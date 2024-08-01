@@ -1,44 +1,61 @@
-from src.log import log
+from src.log import log, info
 from pywikibot import Site, Page
-from pywikibot.pagegenerators import AllpagesPageGenerator
 from pywikibot.bot import CreatingPageBot
 
 from src import Data, Word
 
 
 class Bot(CreatingPageBot):
-
+    """
+    A bot class for creating and managing pages on a wiki site.
+    Inherits from CreatingPageBot.
+    """
     update_options = {
         "minor": False
     }
 
-    def __init__(self, namespace: str, namespace_id: int, db: Data) -> None:
+    def __init__(self, db: Data, namespace: str = None, namespace_id: int = 0) -> None:
+        """
+        Initializes the Bot class with database connection, namespace, and namespace ID.
+
+        Args:
+            db (Data): The database connection object.
+            namespace (str, optional): The namespace for the pages. Defaults to None.
+            namespace_id (int, optional): The ID of the namespace. Defaults to 0.
+        """
         self.db = db
         self.site = Site()
+        self.namespace = namespace
         self.namespace_id = namespace_id
-        self.pages_generator = AllpagesPageGenerator(site=self.site, namespace=namespace)
         super().__init__()
 
-    def get_generator(self):
-        while row := self.db.get_next_page():
-            title = row[1]
-            page = Page(self.site, title, ns=self.namespace_id)
-            yield page
-
     def treat_pages(self) -> None:
+        """
+        Processes pages from the database, creating or updating them on the wiki site.
+        """
         while page := self.db.get_next_page():
             word = Word(page)
-            if word.proceed:
-                if word.pierrick not in self.site.allpages():
-                    main = Page(self.site, word.pierrick)
+            if not word.proceed:
+                log(f"Word {word.pierrick} should be manually added. : {word.why_not_proceed} ")
+                continue
+            else:
+                main = Page(self.site, word.pierrick, ns=self.namespace_id)
+                if main.exists():
+                    info(f"{word.pierrick} already exists.")
+                    continue
+                else:
                     main.text = word.get_wikicode()
-                    main.save(minor=False, botflag=True)
+                    main.save(minor=False, bot=True)
 
                     if word.is_declinable():
                         for decl in word.declinaisons:
-                            if decl not in self.site.allpages():
-                                decl = Page(self.site, decl)
-                                decl.text = f"#REDIRECT [[{word.pierrick}]]"
-                                decl.save(minor=False, botflag=True)
-            else:
-                log(f"Word {word.pierrick} should be manually added. : {word.why_not_proceed} ")
+                            decl = Page(self.site, decl, ns=self.namespace_id)
+                            if decl.exists():
+                                info(f"{word.pierrick} already exists.")
+                                continue
+                            else:
+                                if self.namespace is None:
+                                    decl.text = f"#REDIRECT [[{word.pierrick}]]"
+                                else:
+                                    decl.text = f"#REDIRECT [[{self.namespace}:{word.pierrick}]]"
+                                decl.save(minor=False, bot=True)
